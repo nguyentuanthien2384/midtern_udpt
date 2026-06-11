@@ -103,13 +103,63 @@ class KeyValueNode:
     @staticmethod
     def _hash_int(value: str) -> int:
         return int(hashlib.md5(value.encode("utf-8")).hexdigest(), 16)
+    
+    def _get_primary_node(self, key: str) -> NodeEndpoint:
+        key_hash = self._hash_int(key)
+        for node in self.nodes:
+            if self._hash_int(node.id) >= key_hash:
+                return node
+        return self.nodes[0]
+
+    def _get_replica_nodes(self, key: str) -> List[NodeEndpoint]:
+        if self.replication_factor <= 1:
+            return []
+        primary = self._get_primary_node(key)
+        idx = self.nodes.index(primary)
+        replicas: List[NodeEndpoint] = []
+        for step in range(1, self.replication_factor):
+            replicas.append(self.nodes[(idx + step) % len(self.nodes)])
+        return replicas
+
+    def _connect(self, node: NodeEndpoint) -> xmlrpc.client.ServerProxy:
+        return xmlrpc.client.ServerProxy(
+            node.url,
+            transport=TimeoutTransport(timeout=self.rpc_timeout),
+            allow_none=True,
+        )
+
+    def _ok_response(self, **extra: Any) -> str:
+        payload = {"status": "ok", **extra}
+        return json.dumps(payload, ensure_ascii=False)
+
+    def _node_payload(self, node: NodeEndpoint) -> Dict[str, Any]:
+        return {"id": node.id, "host": node.host, "port": node.port, "url": node.url}
+
+    def _not_found_response(self, key: str) -> str:
+        return json.dumps({"status": "not_found", "key": key, "node": self.node_id}, ensure_ascii=False)
+
+    def _local_get_unlocked(self, key: str) -> Optional[Dict[str, Any]]:
+        if key in self.data_store:
+            return {"value": self.data_store[key], "role": "primary"}
+        if key in self.replica_store:
+            return {"value": self.replica_store[key], "role": "replica"}
+        return None
 
 
 def main() -> None:
-    ep = NodeEndpoint(id="node1", host="127.0.0.1", port=8000)
-    print("core classes + KeyValueNode __init__ added.")
-    print(f"Endpoint: {ep.label} -> {ep.url}")
+    nodes = [
+        NodeEndpoint(id="node1", host="127.0.0.1", port=8000),
+        NodeEndpoint(id="node2", host="127.0.0.1", port=8001),
+        NodeEndpoint(id="node3", host="127.0.0.1", port=8002),
+    ]
+    node = KeyValueNode(node_id="node1", nodes=nodes, replication_factor=2)
+    key = "day4_key"
+    primary = node._get_primary_node(key)
+    replicas = node._get_replica_nodes(key)
 
+    print(" routing/hash helper methods added.")
+    print(f"Primary for '{key}': {primary.label}")
+    print(f"Replicas: {[r.label for r in replicas]}")
 
 if __name__ == "__main__":
     main()
