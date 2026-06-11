@@ -145,47 +145,6 @@ class KeyValueNode:
             return {"value": self.replica_store[key], "role": "replica"}
         return None
 
-    def _get_primary_node(self, key: str) -> NodeEndpoint:
-        key_hash = self._hash_int(key)
-        for node in self.nodes:
-            if self._hash_int(node.id) >= key_hash:
-                return node
-        return self.nodes[0]
-
-    def _get_replica_nodes(self, key: str) -> List[NodeEndpoint]:
-        if self.replication_factor <= 1:
-            return []
-        primary = self._get_primary_node(key)
-        idx = self.nodes.index(primary)
-        replicas: List[NodeEndpoint] = []
-        for step in range(1, self.replication_factor):
-            replicas.append(self.nodes[(idx + step) % len(self.nodes)])
-        return replicas
-
-    def _connect(self, node: NodeEndpoint) -> xmlrpc.client.ServerProxy:
-        return xmlrpc.client.ServerProxy(
-            node.url,
-            transport=TimeoutTransport(timeout=self.rpc_timeout),
-            allow_none=True,
-        )
-
-    def _ok_response(self, **extra: Any) -> str:
-        payload = {"status": "ok", **extra}
-        return json.dumps(payload, ensure_ascii=False)
-
-    def _node_payload(self, node: NodeEndpoint) -> Dict[str, Any]:
-        return {"id": node.id, "host": node.host, "port": node.port, "url": node.url}
-
-    def _not_found_response(self, key: str) -> str:
-        return json.dumps({"status": "not_found", "key": key, "node": self.node_id}, ensure_ascii=False)
-
-    def _local_get_unlocked(self, key: str) -> Optional[Dict[str, Any]]:
-        if key in self.data_store:
-            return {"value": self.data_store[key], "role": "primary"}
-        if key in self.replica_store:
-            return {"value": self.replica_store[key], "role": "replica"}
-        return None
-
     def put(self, key: str, value: str, source: str = "client") -> str:
         key = str(key).strip()
         value = str(value)
@@ -274,6 +233,84 @@ class KeyValueNode:
         for replica in replicas:
             threading.Thread(target=_do, args=(replica,), daemon=True).start()
 
+    # --- GET ---
+
+    def get(self, key: str, source: str = "client") -> str:
+        key = str(key).strip()
+        if not key:
+            return self._not_found_response(key)
+
+        primary = self._get_primary_node(key)
+        replicas = self._get_replica_nodes(key)
+
+        if source == "internal":
+            with self.lock:
+                local = self._local_get_unlocked(key)
+            if local is None:
+                return self._not_found_response(key)
+            print(f"[{self.node_id}] GET {local['role']}: {key} -> {local['value']}")
+            return self._ok_response(
+                value=local["value"],
+                node=self.node_id,
+                role=local["role"],
+                primary=primary.id,
+                replicas=[r.id for r in replicas],
+            )
+
+        if primary.id != self.node_id:
+            print(f"[{self.node_id}] FORWARD GET '{key}' -> {primary.label}")
+            try:
+                primary_result = self._connect(primary).get(key, "internal")
+                parsed = json.loads(primary_result)
+                if parsed.get("status") == "ok":
+                    return primary_result
+                if parsed.get("status") == "not_found":
+                    with self.lock:
+                        self.replica_store.pop(key, None)
+                    return self._not_found_response(key)
+            except Exception as exc:
+                print(f"[{self.node_id}] Primary get failed, trying replica fallback: {exc}")
+
+            if any(r.id == self.node_id for r in replicas):
+                with self.lock:
+                    local = self._local_get_unlocked(key)
+                if local is not None:
+                    print(f"[{self.node_id}] GET fallback {local['role']}: {key} -> {local['value']}")
+                    return self._ok_response(
+                        value=local["value"],
+                        node=self.node_id,
+                        role=local["role"],
+                        primary=primary.id,
+                        replicas=[r.id for r in replicas],
+                    )
+
+            for replica in replicas:
+                if replica.id == self.node_id:
+                    continue
+                try:
+                    result = self._connect(replica).get(key, "internal")
+                    parsed = json.loads(result)
+                    if parsed.get("status") == "ok":
+                        return result
+                except Exception:
+                    continue
+
+            return self._not_found_response(key)
+
+        with self.lock:
+            local = self._local_get_unlocked(key)
+        if local is not None:
+            print(f"[{self.node_id}] GET {local['role']}: {key} -> {local['value']}")
+            return self._ok_response(
+                value=local["value"],
+                node=self.node_id,
+                role=local["role"],
+                primary=primary.id,
+                replicas=[r.id for r in replicas],
+            )
+
+        return self._not_found_response(key)
+
 
 def main() -> None:
     nodes = [
@@ -282,20 +319,11 @@ def main() -> None:
         NodeEndpoint(id="node3", host="127.0.0.1", port=8002),
     ]
     node = KeyValueNode(node_id="node1", nodes=nodes, replication_factor=2)
-
-    key = "day4_key"
-    primary = node._get_primary_node(key)
-    replicas = node._get_replica_nodes(key)
-
     result = json.loads(node.put("k1", "v1"))
     print("PUT flow with forwarding and replication helper added.")
     print(f"PUT status: {result.get('status')}")
     print(f"PUT role: {result.get('role')}")
 
-
-    print(" routing/hash helper methods added.")
-    print(f"Primary for '{key}': {primary.label}")
-    print(f"Replicas: {[r.label for r in replicas]}")
 
 if __name__ == "__main__":
     main()
