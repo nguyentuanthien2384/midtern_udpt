@@ -311,6 +311,104 @@ class KeyValueNode:
 
         return self._not_found_response(key)
 
+    def delete(self, key: str, source: str = "client") -> str:
+        key = str(key).strip()
+        if not key:
+            return self._not_found_response(key)
+
+        primary = self._get_primary_node(key)
+        replicas = self._get_replica_nodes(key)
+
+        if source == "primary":
+            with self.lock:
+                removed_replica = self.replica_store.pop(key, None)
+                removed_primary = self.data_store.pop(key, None)
+            found = removed_replica is not None or removed_primary is not None
+            print(f"[{self.node_id}] REPLICA DELETE: {key} ({'found' if found else 'not found'})")
+            return json.dumps(
+                {"status": "ok" if found else "not_found", "node": self.node_id, "role": "replica"},
+                ensure_ascii=False,
+            )
+
+        if primary.id == self.node_id:
+            with self.lock:
+                removed_primary = self.data_store.pop(key, None)
+                removed_replica = self.replica_store.pop(key, None)
+            print(f"[{self.node_id}] PRIMARY DELETE: {key}")
+            deleted_on_replica = self._delete_from_replicas(key, replicas)
+            found = removed_primary is not None or removed_replica is not None or deleted_on_replica
+            return json.dumps(
+                {
+                    "status": "ok" if found else "not_found",
+                    "node": self.node_id,
+                    "role": "primary",
+                    "primary": primary.id,
+                    "replicas": [r.id for r in replicas],
+                },
+                ensure_ascii=False,
+            )
+
+        print(f"[{self.node_id}] FORWARD DELETE '{key}' -> {primary.label}")
+        try:
+            result = self._connect(primary).delete(key, "client")
+            parsed = json.loads(result)
+            if parsed.get("status") in {"ok", "not_found"}:
+                with self.lock:
+                    stale_replica = self.replica_store.pop(key, None)
+                if parsed.get("status") == "not_found" and stale_replica is not None:
+                    parsed.update(
+                        {
+                            "status": "ok",
+                            "message": "Deleted stale local replica",
+                            "node": self.node_id,
+                            "role": "replica",
+                        }
+                    )
+                    return json.dumps(parsed, ensure_ascii=False)
+            return result
+        except Exception as exc:
+            print(f"[{self.node_id}] Primary delete failed, trying replica fallback: {exc}")
+
+        deleted_any = False
+        for replica in replicas:
+            if replica.id == self.node_id:
+                with self.lock:
+                    removed_replica = self.replica_store.pop(key, None)
+                    removed_primary = self.data_store.pop(key, None)
+                deleted_any = deleted_any or removed_replica is not None or removed_primary is not None
+                continue
+            try:
+                result = json.loads(self._connect(replica).delete(key, "primary"))
+                if result.get("status") == "ok":
+                    deleted_any = True
+            except Exception:
+                continue
+
+        return json.dumps(
+            {
+                "status": "ok" if deleted_any else "error",
+                "message": "Primary down, attempted delete on replicas",
+                "node": self.node_id,
+                "primary": primary.id,
+                "replicas": [r.id for r in replicas],
+            },
+            ensure_ascii=False,
+        )
+
+    def _delete_from_replicas(self, key: str, replicas: List[NodeEndpoint]) -> bool:
+        deleted_any = False
+        for replica in replicas:
+            if replica.id == self.node_id:
+                continue
+            try:
+                result = json.loads(self._connect(replica).delete(key, "primary"))
+                if result.get("status") == "ok":
+                    deleted_any = True
+                print(f"  -> Delete replica '{key}' on {replica.label}: {result.get('status')}")
+            except Exception as exc:
+                print(f"  -> Cannot delete replica '{key}' on {replica.label}: {exc}")
+        return deleted_any
+
 
 def main() -> None:
     nodes = [
