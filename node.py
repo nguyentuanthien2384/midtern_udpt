@@ -544,17 +544,77 @@ class KeyValueNode:
         return self._ok_response(primary=len(self.data_store), replica=len(self.replica_store), node=self.node_id)
 
 
+def load_config(path: str) -> Dict[str, Any]:
+    config_path = Path(path)
+    if not config_path.exists():
+        raise FileNotFoundError(f"Không tìm thấy file config: {config_path}")
+    with config_path.open("r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def parse_nodes_from_config(config: Dict[str, Any]) -> List[NodeEndpoint]:
+    nodes = []
+    for item in config.get("nodes", []):
+        nodes.append(NodeEndpoint(id=str(item["id"]), host=str(item["host"]), port=int(item["port"])))
+    if not nodes:
+        raise ValueError("cluster_config.json phải có danh sách nodes")
+    return nodes
+
+
+def legacy_config_from_ports(ports: List[int]) -> Dict[str, Any]:
+    return {
+        "nodes": [{"id": f"node{i + 1}", "host": "127.0.0.1", "port": port} for i, port in enumerate(ports)],
+        "replication_factor": 2,
+        "heartbeat_interval": 3,
+        "failure_timeout": 10,
+        "rpc_timeout": 1.5,
+    }
+
+
+def build_arg_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Chạy một node Key-Value phân tán")
+    parser.add_argument("legacy_ports", nargs="*", help="Cách cũ: python node.py 8000 8001 8002")
+    parser.add_argument("--node", "--node-id", dest="node_id", default=os.environ.get("NODE_ID"), help="ID node trong cluster_config.json, ví dụ: node1")
+    parser.add_argument("--config", default=os.environ.get("CLUSTER_CONFIG", "cluster_config.json"), help="Đường dẫn file cấu hình cluster")
+    parser.add_argument("--bind-host", default=os.environ.get("BIND_HOST", "127.0.0.1"), help="IP bind server. VM/Docker nên dùng 0.0.0.0")
+    return parser
+
+
 def main() -> None:
-    nodes = [
-        NodeEndpoint(id="node1", host="127.0.0.1", port=8000),
-        NodeEndpoint(id="node2", host="127.0.0.1", port=8001),
-        NodeEndpoint(id="node3", host="127.0.0.1", port=8002),
-    ]
-    node = KeyValueNode(node_id="node1", nodes=nodes, replication_factor=2)
-    result = json.loads(node.put("k1", "v1"))
-    print("PUT flow with forwarding and replication helper added.")
-    print(f"PUT status: {result.get('status')}")
-    print(f"PUT role: {result.get('role')}")
+    parser = build_arg_parser()
+    args = parser.parse_args()
+
+    # Legacy mode để không phá cách chạy cũ.
+    if args.legacy_ports and not args.node_id:
+        ports = [int(p) for p in args.legacy_ports]
+        my_port = ports[0]
+        config = legacy_config_from_ports(ports)
+        nodes = parse_nodes_from_config(config)
+        node_id = next(n.id for n in nodes if n.port == my_port)
+        bind_host = "127.0.0.1"
+    else:
+        if not args.node_id:
+            parser.error("Cần truyền --node node1 hoặc dùng cách cũ: python node.py 8000 8001 8002")
+        config = load_config(args.config)
+        nodes = parse_nodes_from_config(config)
+        node_id = args.node_id
+        bind_host = args.bind_host
+
+    endpoint = {n.id: n for n in nodes}[node_id]
+    server = ThreadedServer((bind_host, endpoint.port), requestHandler=QuietHandler, allow_none=True)
+    node = KeyValueNode(
+        node_id=node_id,
+        nodes=nodes,
+        replication_factor=int(config.get("replication_factor", 2)),
+        heartbeat_interval=float(config.get("heartbeat_interval", 3)),
+        failure_timeout=float(config.get("failure_timeout", 10)),
+        rpc_timeout=float(config.get("rpc_timeout", 1.5)),
+    )
+    server.register_instance(node)
+
+    print(f"{node_id} đang lắng nghe tại {bind_host}:{endpoint.port}")
+    print(f"   Địa chỉ quảng bá trong cluster: {endpoint.url}")
+    server.serve_forever()
 
 
 if __name__ == "__main__":
