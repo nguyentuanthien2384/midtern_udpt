@@ -409,6 +409,46 @@ class KeyValueNode:
                 print(f"  -> Cannot delete replica '{key}' on {replica.label}: {exc}")
         return deleted_any
 
+    def get_all_data(self) -> str:
+        with self.lock:
+            return json.dumps({"primary": dict(self.data_store), "replica": dict(self.replica_store)}, ensure_ascii=False)
+
+    def get_node_info(self) -> str:
+        with self.lock:
+            return json.dumps(
+                {
+                    "id": self.node_id,
+                    "node_id": self.node_id,
+                    "host": self.endpoint.host,
+                    "port": self.endpoint.port,
+                    "url": self.endpoint.url,
+                    "all_nodes": [self._node_payload(n) for n in self.nodes],
+                    "all_ports": [n.port for n in self.nodes],
+                    "primary_count": len(self.data_store),
+                    "replica_count": len(self.replica_store),
+                    "primary_keys": list(self.data_store.keys()),
+                    "replica_keys": list(self.replica_store.keys()),
+                    "neighbors": self.neighbor_ids,
+                    "node_status": dict(self.node_status),
+                    "replication_factor": self.replication_factor,
+                },
+                ensure_ascii=False,
+            )
+
+    def get_routing_info(self, key: str) -> str:
+        primary = self._get_primary_node(key)
+        replicas = self._get_replica_nodes(key)
+        return json.dumps(
+            {
+                "key": key,
+                "primary": self._node_payload(primary),
+                "primary_port": primary.port,
+                "replicas": [self._node_payload(r) for r in replicas],
+                "replica_port": replicas[0].port if replicas else None,
+            },
+            ensure_ascii=False,
+        )
+
 
 def main() -> None:
     nodes = [
