@@ -485,6 +485,64 @@ class KeyValueNode:
                         print(f"  [{self.node_id}] {nid} BỊ MẤT KẾT NỐI")
             time.sleep(2)
 
+    # --- Recovery ---
+
+    def _sync_data_on_startup(self) -> None:
+        print("Dang dong bo du lieu tu cluster...")
+        primary_candidates: Dict[str, str] = {}
+        replica_candidates: Dict[str, str] = {}
+        synced_from: List[str] = []
+
+        for nid in self.neighbor_ids:
+            node = self.nodes_by_id[nid]
+            try:
+                raw = self._connect(node).get_all_data()
+                data = json.loads(raw)
+            except Exception as exc:
+                print(f"  -> {node.label} not available: {exc}")
+                continue
+
+            synced_from.append(node.id)
+            for key, value in data.get("replica", {}).items():
+                replica_candidates.setdefault(str(key), str(value))
+            for key, value in data.get("primary", {}).items():
+                primary_candidates[str(key)] = str(value)
+
+        if not synced_from:
+            print("  -> No online node found. Starting with empty data.")
+            return
+
+        combined: Dict[str, str] = dict(replica_candidates)
+        combined.update(primary_candidates)
+
+        with self.lock:
+            for key, value in combined.items():
+                primary = self._get_primary_node(key)
+                replicas = self._get_replica_nodes(key)
+                if primary.id == self.node_id:
+                    self.data_store[key] = value
+                    self.replica_store.pop(key, None)
+                elif any(r.id == self.node_id for r in replicas):
+                    self.replica_store[key] = value
+                    self.data_store.pop(key, None)
+
+            primary_items = list(self.data_store.items())
+
+        for key, value in primary_items:
+            self._replicate_put(key, value, self._get_replica_nodes(key))
+
+        print(
+            f"  -> Synced from {', '.join(synced_from)}: "
+            f"primary={len(self.data_store)}, replica={len(self.replica_store)}"
+        )
+
+    def force_sync(self) -> str:
+        with self.lock:
+            self.data_store.clear()
+            self.replica_store.clear()
+        self._sync_data_on_startup()
+        return self._ok_response(primary=len(self.data_store), replica=len(self.replica_store), node=self.node_id)
+
 
 def main() -> None:
     nodes = [
