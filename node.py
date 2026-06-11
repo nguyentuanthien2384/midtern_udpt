@@ -449,6 +449,42 @@ class KeyValueNode:
             ensure_ascii=False,
         )
 
+    # --- Heartbeat ---
+
+    def heartbeat(self, from_node_id: str) -> bool:
+        with self.lock:
+            self.last_heartbeat[from_node_id] = time.time()
+            old = self.node_status.get(from_node_id)
+            self.node_status[from_node_id] = "ALIVE"
+            if old == "DEAD":
+                print(f"  [{self.node_id}] {from_node_id} ĐÃ HỒI PHỤC")
+            elif old != "ALIVE":
+                print(f"  [{self.node_id}] {from_node_id} ONLINE")
+        return True
+
+    def _send_heartbeat_loop(self) -> None:
+        while True:
+            for nid in self.neighbor_ids:
+                node = self.nodes_by_id[nid]
+                try:
+                    self._connect(node).heartbeat(self.node_id)
+                except Exception:
+                    pass
+            time.sleep(self.heartbeat_interval)
+
+    def _detect_failures_loop(self) -> None:
+        while True:
+            now = time.time()
+            with self.lock:
+                for nid in self.neighbor_ids:
+                    last = self.last_heartbeat.get(nid)
+                    if last is None:
+                        continue
+                    if now - last > self.failure_timeout and self.node_status.get(nid) == "ALIVE":
+                        self.node_status[nid] = "DEAD"
+                        print(f"  [{self.node_id}] {nid} BỊ MẤT KẾT NỐI")
+            time.sleep(2)
+
 
 def main() -> None:
     nodes = [
