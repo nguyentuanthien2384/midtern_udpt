@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="ARS Store - Hệ thống quản lý Key-Value phân tán">
+  <title>ARS Store — Quản Lý Hệ Thống Phân Tán</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+  {% block content %}{% endblock %}
+  <div class="toast-container" id="toastContainer"></div>
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

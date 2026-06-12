@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Sidebar -->
+{% include "partials/sidebar.html" %}
+
+<!-- Main Content -->
+<div class="main">
+  <header class="header">
+    <div class="header-title" id="pageTitle">Tổng Quan</div>
+    <div class="header-right">
+      <div class="cluster-indicator" id="clusterIndicator">
+        <span class="dot"></span>
+        <span id="clusterIndicatorText">Đang kiểm tra...</span>
+      </div>
+      <span class="header-clock" id="clockText"></span>
+      <div class="avatar">AD</div>
+    </div>
+  </header>
+
+  <div class="content">
+    {% include "partials/page_dashboard.html" %}
+    {% include "partials/page_records.html" %}
+    {% include "partials/page_add.html" %}
+    {% include "partials/page_search.html" %}
+    {% include "partials/page_servers.html" %}
+    {% include "partials/page_logs.html" %}
+  </div>
+</div>
+{% endblock %}
