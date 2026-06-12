@@ -1,12 +1,4 @@
-"""
-Management Web App cho hệ thống Key-Value phân tán.
 
-Local:
-  python manager_app.py
-
-VM/multi-machine:
-  python manager_app.py --config cluster_config.json --host 0.0.0.0 --port 5000
-"""
 from __future__ import annotations
 
 import argparse
@@ -79,7 +71,6 @@ def resolve_node(node_ref: Optional[Any]) -> Dict[str, Any]:
     if ref in NODES_BY_ID:
         return NODES_BY_ID[ref]
 
-    # Tương thích code cũ: frontend/client cũ gửi port.
     for node in CLUSTER_NODES:
         if str(node.get("port")) == ref:
             return node
@@ -107,21 +98,21 @@ def safe_node_public(node: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-# ─── Web Pages ────────────────────────────────────────
+# ─── Web Pages
 
 @app.route("/")
 def index():
     return render_template("index.html")
 
 
-# ─── API: Cluster nodes ───────────────────────────────
+#  API: Cluster nodes
 
 @app.route("/api/cluster/nodes")
 def cluster_nodes():
     return jsonify([safe_node_public(n) for n in CLUSTER_NODES])
 
 
-# ─── API: Cluster Status ─────────────────────────────
+#  API: Cluster Status
 
 @app.route("/api/cluster/status")
 def cluster_status():
@@ -157,7 +148,7 @@ def cluster_status():
     return jsonify(nodes)
 
 
-# ─── API: PUT ─────────────────────────────────────────
+#  API: PUT
 
 @app.route("/api/put", methods=["POST"])
 def api_put():
@@ -177,7 +168,7 @@ def api_put():
         return jsonify({"status": "error", "message": f"Node không phản hồi: {e}"}), 500
 
 
-# ─── API: GET ─────────────────────────────────────────
+#  API: GET
 
 @app.route("/api/get", methods=["POST"])
 def api_get():
@@ -196,7 +187,7 @@ def api_get():
         return jsonify({"status": "error", "message": f"Node không phản hồi: {e}"}), 500
 
 
-# ─── API: DELETE ──────────────────────────────────────
+#  API: DELETE
 
 @app.route("/api/delete", methods=["POST"])
 def api_delete():

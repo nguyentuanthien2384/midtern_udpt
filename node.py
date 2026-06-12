@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 import argparse
@@ -100,6 +101,23 @@ class KeyValueNode:
         self.last_heartbeat: Dict[str, Optional[float]] = {nid: None for nid in self.neighbor_ids}
         self.node_status: Dict[str, str] = {nid: "UNKNOWN" for nid in self.neighbor_ids}
 
+        print(f"=== {self.endpoint.label} ĐANG KHỞI ĐỘNG ===")
+        print("Cluster:")
+        for n in self.nodes:
+            role = " (this)" if n.id == self.node_id else ""
+            print(f"  - {n.label}{role}")
+        print(f"Replication factor: {self.replication_factor}")
+
+        self._sync_data_on_startup()
+        threading.Thread(target=self._send_heartbeat_loop, daemon=True).start()
+        threading.Thread(target=self._detect_failures_loop, daemon=True).start()
+
+        print(f"=== {self.endpoint.label} SẴN SÀNG ===")
+        print(f"Primary keys: {list(self.data_store.keys())}")
+        print(f"Replica keys: {list(self.replica_store.keys())}")
+
+    # --- Hash ring / routing ---
+
     @staticmethod
     def _hash_int(value: str) -> int:
         return int(hashlib.md5(value.encode("utf-8")).hexdigest(), 16)
@@ -145,6 +163,8 @@ class KeyValueNode:
             return {"value": self.replica_store[key], "role": "replica"}
         return None
 
+    # --- PUT ---
+
     def put(self, key: str, value: str, source: str = "client") -> str:
         key = str(key).strip()
         value = str(value)
@@ -154,7 +174,6 @@ class KeyValueNode:
         primary = self._get_primary_node(key)
         replicas = self._get_replica_nodes(key)
 
-        # Primary yêu cầu node này lưu bản sao.
         if source == "primary":
             with self.lock:
                 self.replica_store[key] = value
