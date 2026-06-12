@@ -1,0 +1,33 @@
+<!-- PAGE: Tìm kiếm & Xóa -->
+<div class="page" id="page-search">
+  <div class="page-header">
+    <div>
+      <div class="page-title"><i class="fas fa-search"></i> Tìm Kiếm & Xóa Dữ Liệu</div>
+      <div class="page-subtitle">Truy vấn hoặc xóa key trên toàn bộ cluster</div>
+    </div>
+  </div>
+
+  <div class="form-card">
+    <div class="form-grid">
+      <div class="form-group">
+        <label><i class="fas fa-key" style="color:var(--color-accent);margin-right:4px"></i> Key cần tìm / xóa</label>
+        <input id="searchKey" placeholder="Nhập key...">
+      </div>
+      <div class="form-group">
+        <label><i class="fas fa-server" style="color:var(--color-accent);margin-right:4px"></i> Kết nối qua Node</label>
+        <select id="searchPort">
+          <option value="node1">Đang tải danh sách node...</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:24px">
+      <button id="btnGet" class="btn btn-primary" onclick="doGet()">
+        <i class="fas fa-search"></i> Tìm kiếm (GET)
+      </button>
+      <button id="btnDelete" class="btn btn-danger" onclick="doDelete()">
+        <i class="fas fa-trash"></i> Xóa (DELETE)
+      </button>
+    </div>
+    <div class="result-box" id="searchResult"></div>
+  </div>
+</div>

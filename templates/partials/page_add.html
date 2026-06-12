@@ -1,0 +1,31 @@
+<!-- PAGE: Thêm dữ liệu -->
+<div class="page" id="page-add">
+  <div class="page-header">
+    <div>
+      <div class="page-title"><i class="fas fa-plus-circle"></i> Thêm Dữ Liệu Mới</div>
+      <div class="page-subtitle">Lưu cặp Key-Value vào hệ thống phân tán</div>
+    </div>
+  </div>
+
+  <div class="form-card">
+    <div class="form-grid">
+      <div class="form-group">
+        <label><i class="fas fa-key" style="color:var(--color-accent);margin-right:4px"></i> Key (Khóa)</label>
+        <input id="putKey" placeholder="VD: user_001, product_name...">
+      </div>
+      <div class="form-group">
+        <label><i class="fas fa-server" style="color:var(--color-accent);margin-right:4px"></i> Kết nối qua Node</label>
+        <select id="putPort">
+          <option value="node1">Đang tải danh sách node...</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label><i class="fas fa-align-left" style="color:var(--color-accent);margin-right:4px"></i> Value (Giá trị)</label>
+        <textarea id="putValue" rows="4" placeholder="Nhập giá trị cần lưu trữ..."></textarea>
+      </div>
+    </div>
+    <button id="btnPut" class="btn btn-primary" onclick="doPut()">
+      <i class="fas fa-save"></i> Lưu Dữ Liệu
+    </button>
+  </div>
+</div>

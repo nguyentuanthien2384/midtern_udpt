@@ -1,0 +1,24 @@
+<!-- PAGE: Trạng thái Server -->
+<div class="page" id="page-servers">
+  <div class="page-header">
+    <div>
+      <div class="page-title"><i class="fas fa-server"></i> Giám Sát Cụm Server</div>
+      <div class="page-subtitle">Trạng thái real-time của tất cả node trong cluster</div>
+    </div>
+    <div class="toolbar-actions">
+      <span style="font-size:12px;color:var(--color-muted);margin-right:8px">
+        Cập nhật: <span id="lastUpdate">--</span>
+      </span>
+      <button id="btnRefreshStatus" class="btn btn-outline" onclick="loadClusterStatus()">
+        <i class="fas fa-sync"></i> Làm mới
+      </button>
+    </div>
+  </div>
+
+  <div class="nodes-grid" id="nodesGrid">
+    <div class="loading-state" style="grid-column:1/-1">
+      <i class="fas fa-spinner fa-spin" style="font-size:32px"></i>
+      <p>Đang tải trạng thái cluster...</p>
+    </div>
+  </div>
+</div>
