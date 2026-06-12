@@ -1,0 +1,54 @@
+<!-- PAGE: Dashboard -->
+<div class="page active" id="page-dashboard">
+  <div class="page-header">
+    <div>
+      <div class="page-title"><i class="fas fa-chart-pie"></i> Tổng Quan Hệ Thống</div>
+      <div class="page-subtitle">Giám sát real-time trạng thái cluster và dữ liệu</div>
+    </div>
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="stats-grid">
+    <div class="stat-card indigo">
+      <div class="stat-card-icon"><i class="fas fa-key"></i></div>
+      <div class="stat-card-value" id="statTotalKeys">--</div>
+      <div class="stat-card-label">Tổng số Key</div>
+    </div>
+    <div class="stat-card emerald">
+      <div class="stat-card-icon"><i class="fas fa-server"></i></div>
+      <div class="stat-card-value" id="statOnlineNodes">--</div>
+      <div class="stat-card-label">Node Online</div>
+    </div>
+    <div class="stat-card amber">
+      <div class="stat-card-icon"><i class="fas fa-copy"></i></div>
+      <div class="stat-card-value" id="statTotalReplicas">--</div>
+      <div class="stat-card-label">Bản Sao (Replica)</div>
+    </div>
+    <div class="stat-card rose">
+      <div class="stat-card-icon"><i class="fas fa-heart-pulse"></i></div>
+      <div class="stat-card-value" id="statClusterHealth">--</div>
+      <div class="stat-card-label">Sức Khỏe Cluster</div>
+    </div>
+  </div>
+
+  <!-- Data Distribution -->
+  <div class="dist-card">
+    <div class="dist-title"><i class="fas fa-chart-bar"></i> Phân Bổ Dữ Liệu Theo Node</div>
+    <div id="dataDist">
+      <div class="loading-state"><i class="fas fa-spinner fa-spin"></i> Đang tải...</div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="quick-actions">
+    <button class="btn btn-primary" onclick="document.querySelector('[onclick*=add]').click()">
+      <i class="fas fa-plus"></i> Thêm Dữ Liệu
+    </button>
+    <button class="btn btn-outline" onclick="document.querySelector('[onclick*=records]').click()">
+      <i class="fas fa-table"></i> Xem Dữ Liệu
+    </button>
+    <button class="btn btn-outline" onclick="document.querySelector('[onclick*=servers]').click()">
+      <i class="fas fa-server"></i> Trạng Thái Server
+    </button>
+  </div>
+</div>

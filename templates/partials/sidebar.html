@@ -1,0 +1,38 @@
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon"><i class="fas fa-database"></i></div>
+    <div>
+      <div class="logo-text">ARS STORE</div>
+      <div class="logo-sub">Distributed Ars</div>
+    </div>
+  </div>
+
+  <div class="sidebar-section">Tổng Quan</div>
+  <div class="sidebar-item active" onclick="showPage('dashboard', this)">
+    <i class="fas fa-chart-pie"></i> Dashboard
+  </div>
+
+  <div class="sidebar-section">Quản Lý Dữ Liệu</div>
+  <div class="sidebar-item" onclick="showPage('records', this)">
+    <i class="fas fa-table"></i> Danh sách dữ liệu
+  </div>
+  <div class="sidebar-item" onclick="showPage('add', this)">
+    <i class="fas fa-plus-circle"></i> Thêm dữ liệu mới
+  </div>
+  <div class="sidebar-item" onclick="showPage('search', this)">
+    <i class="fas fa-search"></i> Tìm kiếm / Xóa
+  </div>
+
+  <div class="sidebar-section">Hệ Thống</div>
+  <div class="sidebar-item" onclick="showPage('servers', this)">
+    <i class="fas fa-server"></i> Trạng thái Server
+  </div>
+  <div class="sidebar-item" onclick="showPage('logs', this)">
+    <i class="fas fa-terminal"></i> Nhật ký hoạt động
+  </div>
+
+  <div class="sidebar-footer">
+    <i class="fas fa-code"></i> ARS Store v2.0<br />
+    Distributed Key-Value System
+  </div>
+</nav>

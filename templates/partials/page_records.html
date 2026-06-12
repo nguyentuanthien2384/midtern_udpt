@@ -1,0 +1,36 @@
+<!-- PAGE: Danh sách dữ liệu -->
+<div class="page" id="page-records">
+  <div class="page-header">
+    <div>
+      <div class="page-title"><i class="fas fa-table"></i> Danh Sách Dữ Liệu</div>
+      <div class="page-subtitle">Tất cả key-value đang lưu trữ trong cluster</div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <input class="search-input" placeholder="Tìm kiếm nhanh..." oninput="filterTable(this.value)">
+    <div class="toolbar-actions">
+      <button id="btnRefreshData" class="btn btn-outline" onclick="loadAllData()">
+        <i class="fas fa-sync"></i> Làm mới
+      </button>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:40px">#</th>
+          <th>KEY</th>
+          <th>VALUE</th>
+          <th>NODE GỐC</th>
+          <th>BẢN SAO</th>
+          <th>THAO TÁC</th>
+        </tr>
+      </thead>
+      <tbody id="dataTable">
+        <tr><td colspan="6" class="loading-state"><i class="fas fa-spinner fa-spin"></i> Đang tải...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>

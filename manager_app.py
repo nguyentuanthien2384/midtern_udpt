@@ -213,3 +213,135 @@ def api_delete():
         return jsonify(result)
     except Exception as e:
         return jsonify({"status": "error", "message": f"Node không phản hồi: {e}"}), 500
+
+
+# ─── API: Tất cả dữ liệu ────────────────────────────
+
+@app.route("/api/all-data")
+def api_all_data():
+    all_entries: Dict[str, Dict[str, Any]] = {}
+    for node_cfg in CLUSTER_NODES:
+        node_id = str(node_cfg.get("id"))
+        try:
+            proxy = connect_node(node_id)
+            raw = json.loads(proxy.get_all_data())
+            for k, v in raw.get("primary", {}).items():
+                if k not in all_entries:
+                    all_entries[k] = {"key": k, "value": v, "primary_node": node_id, "replica_nodes": []}
+                else:
+                    all_entries[k]["primary_node"] = node_id
+            for k, v in raw.get("replica", {}).items():
+                if k not in all_entries:
+                    all_entries[k] = {"key": k, "value": v, "primary_node": None, "replica_nodes": [node_id]}
+                else:
+                    all_entries[k]["replica_nodes"].append(node_id)
+        except Exception:
+            pass
+    return jsonify(list(all_entries.values()))
+
+
+# ─── API: Routing Info ───────────────────────────────
+
+@app.route("/api/routing/<path:key>")
+def api_routing(key):
+    for node_cfg in CLUSTER_NODES:
+        try:
+            proxy = connect_node(node_cfg.get("id"))
+            result = json.loads(proxy.get_routing_info(key))
+            return jsonify(result)
+        except Exception:
+            continue
+    return jsonify({"status": "error", "message": "Không có node nào online"}), 500
+
+
+# ─── API: Force Sync ─────────────────────────────────
+
+@app.route("/api/sync/<path:node_ref>", methods=["POST"])
+def api_sync(node_ref: str):
+    try:
+        proxy = connect_node(node_ref)
+        result = json.loads(proxy.force_sync())
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# ─── API: Dashboard Stats ────────────────────────────
+
+@app.route("/api/cluster/summary")
+@app.route("/api/dashboard/stats")
+def dashboard_stats():
+    online_count = 0
+    total_primary = 0
+    total_replica = 0
+    nodes_info = []
+
+    for node_cfg in CLUSTER_NODES:
+        node_id = str(node_cfg.get("id"))
+        try:
+            proxy = connect_node(node_id)
+            info = json.loads(proxy.get_node_info())
+            online_count += 1
+            total_primary += info.get("primary_count", 0)
+            total_replica += info.get("replica_count", 0)
+            nodes_info.append(
+                {
+                    "id": node_id,
+                    "node_id": node_id,
+                    "host": node_cfg.get("host"),
+                    "port": int(node_cfg.get("port")),
+                    "status": "ONLINE",
+                    "primary_count": info.get("primary_count", 0),
+                    "replica_count": info.get("replica_count", 0),
+                }
+            )
+        except Exception:
+            nodes_info.append(
+                {
+                    "id": node_id,
+                    "node_id": node_id,
+                    "host": node_cfg.get("host"),
+                    "port": int(node_cfg.get("port")),
+                    "status": "OFFLINE",
+                    "primary_count": 0,
+                    "replica_count": 0,
+                }
+            )
+
+    total_nodes = len(CLUSTER_NODES)
+    health = round(online_count / total_nodes * 100) if total_nodes > 0 else 0
+
+    return jsonify(
+        {
+            "total_keys": total_primary,
+            "online_nodes": online_count,
+            "total_nodes": total_nodes,
+            "total_replicas": total_replica,
+            "cluster_health": health,
+            "nodes": nodes_info,
+        }
+    )
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Web UI quản lý KV Store phân tán")
+    parser.add_argument("--config", default=os.environ.get("CLUSTER_CONFIG", "cluster_config.json"))
+    parser.add_argument("--host", default="0.0.0.0")
+    parser.add_argument("--port", type=int, default=5000)
+    return parser
+
+
+if __name__ == "__main__":
+    args = build_parser().parse_args()
+    load_cluster_config(args.config)
+    print("=" * 60)
+    print("  KV Store Management App")
+    print(f"  Config: {CLUSTER_CONFIG_PATH}")
+    print(f"  Web UI: http://{args.host}:{args.port}")
+    print("  Cluster nodes:")
+    for n in CLUSTER_NODES:
+        print(f"   - {n.get('id')}: {node_url(n)}")
+    print("=" * 60)
+    app.run(host=args.host, port=args.port, debug=False)
+else:
+    load_cluster_config(CLUSTER_CONFIG_PATH)
