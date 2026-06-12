@@ -155,3 +155,61 @@ def cluster_status():
                 }
             )
     return jsonify(nodes)
+
+
+# ─── API: PUT ─────────────────────────────────────────
+
+@app.route("/api/put", methods=["POST"])
+def api_put():
+    data = request.json or {}
+    key = data.get("key", "").strip()
+    value = data.get("value", "")
+    target = data.get("node_id") or data.get("node") or data.get("port")
+
+    if not key:
+        return jsonify({"status": "error", "message": "Key không được để trống"}), 400
+
+    try:
+        proxy = connect_node(target)
+        result = json.loads(proxy.put(key, value))
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"Node không phản hồi: {e}"}), 500
+
+
+# ─── API: GET ─────────────────────────────────────────
+
+@app.route("/api/get", methods=["POST"])
+def api_get():
+    data = request.json or {}
+    key = data.get("key", "").strip()
+    target = data.get("node_id") or data.get("node") or data.get("port")
+
+    if not key:
+        return jsonify({"status": "error", "message": "Key không được để trống"}), 400
+
+    try:
+        proxy = connect_node(target)
+        result = json.loads(proxy.get(key))
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"Node không phản hồi: {e}"}), 500
+
+
+# ─── API: DELETE ──────────────────────────────────────
+
+@app.route("/api/delete", methods=["POST"])
+def api_delete():
+    data = request.json or {}
+    key = data.get("key", "").strip()
+    target = data.get("node_id") or data.get("node") or data.get("port")
+
+    if not key:
+        return jsonify({"status": "error", "message": "Key không được để trống"}), 400
+
+    try:
+        proxy = connect_node(target)
+        result = json.loads(proxy.delete(key))
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"Node không phản hồi: {e}"}), 500
