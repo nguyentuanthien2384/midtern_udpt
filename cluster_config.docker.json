@@ -1,0 +1,11 @@
+{
+  "replication_factor": 2,
+  "heartbeat_interval": 3,
+  "failure_timeout": 10,
+  "rpc_timeout": 1.5,
+  "nodes": [
+    { "id": "node1", "host": "node1", "port": 8000 },
+    { "id": "node2", "host": "node2", "port": 8000 },
+    { "id": "node3", "host": "node3", "port": 8000 }
+  ]
+}

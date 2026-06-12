@@ -1,0 +1,17 @@
+services:
+  manager:
+    build: .
+    image: udpt-kv-store:latest
+    container_name: udpt-manager
+    command: ["python", "-u", "manager_app.py", "--config", "/app/cluster_config.vm.docker.json", "--host", "0.0.0.0", "--port", "5000"]
+    volumes:
+      - ./cluster_config.vm.docker.json:/app/cluster_config.vm.docker.json:ro
+    ports:
+      - "${MANAGER_PORT:-5000}:5000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "healthcheck_manager.py", "--host", "127.0.0.1", "--port", "5000"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 8s

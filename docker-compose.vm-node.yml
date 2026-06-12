@@ -1,0 +1,17 @@
+services:
+  kv-node:
+    build: .
+    image: udpt-kv-store:latest
+    container_name: udpt-${NODE_ID:-node1}
+    command: ["python", "-u", "node.py", "--node", "${NODE_ID:-node1}", "--config", "/app/cluster_config.vm.docker.json", "--bind-host", "0.0.0.0"]
+    volumes:
+      - ./cluster_config.vm.docker.json:/app/cluster_config.vm.docker.json:ro
+    ports:
+      - "${NODE_PORT:-8000}:8000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "healthcheck_node.py", "--host", "127.0.0.1", "--port", "8000"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 8s
