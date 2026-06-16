@@ -1,0 +1,13 @@
+# Override OPT-IN: cho phép nút "Tắt node"/"Bật node" trên Web UI điều khiển
+# container Docker. CẢNH BÁO: gắn docker.sock = trao quyền tương đương root host
+# cho manager. Chỉ dùng cho môi trường dev/demo cục bộ, KHÔNG dùng production.
+#
+# Cách chạy:
+#   docker compose -f docker-compose.yml -f docker-compose.control.yml up --build -d
+services:
+  manager:
+    environment:
+      - DOCKER_CONTROL=1
+      # - DOCKER_NODE_PREFIX=udpt-   # đổi nếu container_name khác tiền tố mặc định
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock

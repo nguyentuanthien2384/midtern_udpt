@@ -1,0 +1,113 @@
+# Cụm 4 NODE để demo "Thêm một server" (scale up) theo bài viết.
+# Dùng riêng file này, KHÔNG ảnh hưởng docker-compose.yml (3 node) mặc định.
+#   docker compose -f docker-compose.4node.yml up --build -d
+services:
+  node1:
+    build: .
+    image: udpt-kv-store:latest
+    container_name: udpt-node1
+    command:
+      [
+        "python",
+        "-u",
+        "node.py",
+        "--node",
+        "node1",
+        "--config",
+        "cluster_config.docker.4node.json",
+        "--bind-host",
+        "0.0.0.0",
+      ]
+    ports: ["8001:8000"]
+    volumes: ["node1-data:/app/node_data"]
+    restart: "no"
+
+  node2:
+    image: udpt-kv-store:latest
+    build: .
+    container_name: udpt-node2
+    command:
+      [
+        "python",
+        "-u",
+        "node.py",
+        "--node",
+        "node2",
+        "--config",
+        "cluster_config.docker.4node.json",
+        "--bind-host",
+        "0.0.0.0",
+      ]
+    ports: ["8002:8000"]
+    volumes: ["node2-data:/app/node_data"]
+    depends_on: ["node1"]
+    restart: "no"
+
+  node3:
+    image: udpt-kv-store:latest
+    build: .
+    container_name: udpt-node3
+    command:
+      [
+        "python",
+        "-u",
+        "node.py",
+        "--node",
+        "node3",
+        "--config",
+        "cluster_config.docker.4node.json",
+        "--bind-host",
+        "0.0.0.0",
+      ]
+    ports: ["8003:8000"]
+    volumes: ["node3-data:/app/node_data"]
+    depends_on: ["node1", "node2"]
+    restart: "no"
+
+  node4:
+    image: udpt-kv-store:latest
+    build: .
+    container_name: udpt-node4
+    command:
+      [
+        "python",
+        "-u",
+        "node.py",
+        "--node",
+        "node4",
+        "--config",
+        "cluster_config.docker.4node.json",
+        "--bind-host",
+        "0.0.0.0",
+      ]
+    ports: ["8004:8000"]
+    volumes: ["node4-data:/app/node_data"]
+    depends_on: ["node1", "node2", "node3"]
+    restart: "no"
+
+  manager:
+    image: udpt-kv-store:latest
+    build: .
+    container_name: udpt-manager
+    command:
+      [
+        "python",
+        "-u",
+        "manager_app.py",
+        "--config",
+        "cluster_config.docker.4node.json",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "5000",
+      ]
+    ports: ["5000:5000"]
+    volumes: ["/var/run/docker.sock:/var/run/docker.sock"]
+    depends_on: ["node1", "node2", "node3", "node4"]
+    restart: unless-stopped
+
+volumes:
+  node1-data:
+  node2-data:
+  node3-data:
+  node4-data:

@@ -20,6 +20,11 @@
       "id": "node3",
       "host": "node3",
       "port": 8000
+    },
+    {
+      "id": "node4",
+      "host": "node4",
+      "port": 8000
     }
   ]
 }

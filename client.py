@@ -1,13 +1,4 @@
-"""
-Client CLI cho hệ thống Key-Value phân tán.
 
-Ví dụ chạy local:
-  python client.py 8000
-  python client.py --node node1 --config cluster_config.json
-
-Ví dụ chạy qua máy ảo:
-  python client.py --node node2 --config cluster_config.json
-"""
 from __future__ import annotations
 
 import argparse

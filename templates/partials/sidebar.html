@@ -8,26 +8,42 @@
   </div>
 
   <div class="sidebar-section">Tổng Quan</div>
-  <div class="sidebar-item active" onclick="showPage('dashboard', this)">
+  <div
+    class="sidebar-item active"
+    data-page="dashboard"
+    onclick="showPage('dashboard', this)"
+  >
     <i class="fas fa-chart-pie"></i> Dashboard
   </div>
 
   <div class="sidebar-section">Quản Lý Dữ Liệu</div>
-  <div class="sidebar-item" onclick="showPage('records', this)">
+  <div
+    class="sidebar-item"
+    data-page="records"
+    onclick="showPage('records', this)"
+  >
     <i class="fas fa-table"></i> Danh sách dữ liệu
   </div>
-  <div class="sidebar-item" onclick="showPage('add', this)">
+  <div class="sidebar-item" data-page="add" onclick="showPage('add', this)">
     <i class="fas fa-plus-circle"></i> Thêm dữ liệu mới
   </div>
-  <div class="sidebar-item" onclick="showPage('search', this)">
+  <div
+    class="sidebar-item"
+    data-page="search"
+    onclick="showPage('search', this)"
+  >
     <i class="fas fa-search"></i> Tìm kiếm / Xóa
   </div>
 
   <div class="sidebar-section">Hệ Thống</div>
-  <div class="sidebar-item" onclick="showPage('servers', this)">
+  <div
+    class="sidebar-item"
+    data-page="servers"
+    onclick="showPage('servers', this)"
+  >
     <i class="fas fa-server"></i> Trạng thái Server
   </div>
-  <div class="sidebar-item" onclick="showPage('logs', this)">
+  <div class="sidebar-item" data-page="logs" onclick="showPage('logs', this)">
     <i class="fas fa-terminal"></i> Nhật ký hoạt động
   </div>
 

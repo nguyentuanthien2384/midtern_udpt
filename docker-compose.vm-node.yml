@@ -6,6 +6,7 @@ services:
     command: ["python", "-u", "node.py", "--node", "${NODE_ID:-node1}", "--config", "/app/cluster_config.vm.docker.json", "--bind-host", "0.0.0.0"]
     volumes:
       - ./cluster_config.vm.docker.json:/app/cluster_config.vm.docker.json:ro
+      - kv-node-data:/app/node_data
     ports:
       - "${NODE_PORT:-8000}:8000"
     restart: unless-stopped
@@ -15,3 +16,6 @@ services:
       timeout: 3s
       retries: 5
       start_period: 8s
+
+volumes:
+  kv-node-data:
