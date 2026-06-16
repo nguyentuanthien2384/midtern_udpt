@@ -20,28 +20,28 @@ Project mô phỏng hệ thống lưu trữ dữ liệu dạng **Key – Value**
 
 ```text
 UDPT/
-├── node.py                         # Server node XML-RPC
-├── client.py                       # Client CLI
-├── manager_app.py                  # Flask Web UI quản lý cluster
-├── cluster_config.json             # Cấu hình local Windows/1 máy
-├── cluster_config.vm.example.json  # Mẫu cấu hình nhiều máy ảo chạy Python trực tiếp
-├── Dockerfile                      # Đóng gói project thành Docker image
-├── docker-compose.yml              # Chạy 3 node + manager trên 1 máy bằng Docker
-├── docker-compose.vm-node.yml      # Chạy 1 node Docker trên từng VM
-├── docker-compose.vm-manager.yml   # Chạy Web Manager Docker cho nhiều VM
-├── cluster_config.docker.json      # Config nội bộ Docker Compose local
-├── cluster_config.docker.host.json # Config để host test vào Docker local
-├── cluster_config.vm.docker.example.json # Mẫu config Docker nhiều VM
-├── test_cluster.py                 # Test nhanh cluster
-├── start_cluster.bat               # Chạy local cluster Windows
-├── start_cluster.ps1               # Chạy local cluster PowerShell
-├── start_cluster.sh                # Chạy local cluster Linux/macOS/WSL
-├── run_node_vm.bat/.sh             # Chạy 1 node cho môi trường VM
-├── run_manager.bat/.sh             # Chạy Web UI
-├── templates/                      # Giao diện Flask
-├── static/                         # CSS/JS
-├── SETUP_VM_WINDOWS.md             # Hướng dẫn chạy máy ảo trên Windows
-└── SETUP_DOCKER.md                 # Hướng dẫn chạy Docker local và Docker nhiều VM
+├── node.py
+├── client.py
+├── manager_app.py
+├── cluster_config.json
+├── cluster_config.vm.example.json
+├── Dockerfile
+├── docker-compose.yml
+├── docker-compose.vm-node.yml
+├── docker-compose.vm-manager.yml
+├── cluster_config.docker.json
+├── cluster_config.docker.host.json
+├── cluster_config.vm.docker.example.json
+├── test_cluster.py
+├── start_cluster.bat
+├── start_cluster.ps1
+├── start_cluster.sh
+├── run_node_vm.bat/.sh
+├── run_manager.bat/.sh
+├── templates/
+├── static/
+├── SETUP_VM_WINDOWS.md
+└── SETUP_DOCKER.md
 ```
 
 ## Chạy nhanh trên Windows
@@ -87,7 +87,6 @@ Terminal 4:
 ```bash
 python manager_app.py --config cluster_config.json --host 0.0.0.0 --port 5000
 ```
-
 
 ## Chạy nhanh bằng Docker local
 
@@ -170,7 +169,6 @@ python3 manager_app.py --config cluster_config.json --host 0.0.0.0 --port 5000
 - Nếu chạy nhiều node trên **nhiều VM khác nhau**, các node có thể dùng **cùng port** nhưng phải khác IP.
 - Khi chạy trên VM, phải dùng `--bind-host 0.0.0.0` để node nhận kết nối từ máy khác.
 - Cần mở firewall cho port node, ví dụ `8000/tcp` và Web UI `5000/tcp`.
-
 
 ## Chạy Docker trên nhiều máy ảo
 

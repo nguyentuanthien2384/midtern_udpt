@@ -339,3 +339,79 @@ Bạn có thể mô tả kiến trúc như sau:
 - Heartbeat dùng để phát hiện node sống/chết.
 - Flask Web Manager dùng để quan sát trạng thái cluster, thêm/sửa/xóa/đọc dữ liệu.
 - Khi triển khai trên nhiều VM, mỗi VM đóng vai trò một host vật lý/ảo riêng, Docker giúp chuẩn hóa môi trường chạy.
+
+---
+
+## 8. Lưu trữ bền vững & đồng bộ khi chạy Docker
+
+### 8.1. Dữ liệu được lưu ở đâu
+
+M��i node ghi dữ liệu xuống `/app/node_data/<node_id>.json` bên trong container (gồm `primary`, `replica`, `versions`, `tombstones`). Trong `docker-compose.yml`, mỗi node được gắn một named volume riêng vào đúng thư mục đó:
+
+- `node1-data` → `/app/node_data` của node1
+- `node2-data` → `/app/node_data` của node2
+- `node3-data` → `/app/node_data` của node3
+
+Nhờ vậy dữ liệu **sống sót qua `docker compose down`/`up` và qua việc restart/recreate container**. Lưu ý: `docker compose down -v` sẽ xóa volume (mất dữ liệu) — tránh cờ `-v` khi muốn giữ dữ liệu.
+
+Xem nội dung file dữ liệu của một node:
+
+```bash
+docker compose exec node1 cat /app/node_data/node1.json
+```
+
+Liệt kê volume:
+
+```bash
+docker volume ls | grep data
+```
+
+### 8.2. Đồng bộ (force_sync) trong Docker
+
+Nút "Đồng bộ" trên Web UI gọi RPC tới node tương ứng và hoạt động bình thường trong Docker, vì các container nói chuyện với nhau qua mạng nội bộ của Docker Compose (theo tên service node1/node2/node3, cổng nội bộ 8000). Khi bấm, node nạp lại từ volume, kéo dữ liệu từ các node online, hòa hợp theo last-write-wins (có tính tombstone) rồi sắp xếp lại primary/replica.
+
+### 8.3. Bật/tắt node trong Docker
+
+Hai nút "Tắt node"/"Bật node" trên Web UI **chỉ điều khiển được node chạy ở 127.0.0.1** (chạy trực tiếp cùng máy với manager). Khi chạy bằng Docker, mỗi node là một container riêng nên hãy bật/tắt bằng lệnh Docker (hoặc script kèm theo):
+
+```bash
+# Tắt node3 (mô phỏng sự cố)
+./docker_node_stop.sh node3        # hoặc: docker compose stop node3
+
+# Bật lại node3 -> tự nạp từ volume + đồng bộ với cluster
+./docker_node_start.sh node3       # hoặc: docker compose start node3
+```
+
+Trên Windows dùng `docker_node_stop.bat node3` và `docker_node_start.bat node3`.
+
+### 8.4. Demo chịu lỗi + khôi phục bằng Docker
+
+```bash
+# 1) Chạy cluster
+docker compose up --build -d
+
+# 2) Thêm vài key qua Web UI (http://localhost:5000) hoặc test_cluster.py
+python3 test_cluster.py --config cluster_config.docker.host.json
+
+# 3) Tắt node3 -> cluster vẫn đọc/ghi được nhờ replica
+./docker_node_stop.sh node3
+
+# 4) Bật lại node3 -> dữ liệu được khôi phục từ volume + đồng bộ
+./docker_node_start.sh node3
+```
+
+Lưu ý: sau khi sửa code (ví dụ `node.py`), phải build lại image: `docker compose up --build -d`.
+
+### 8.5. (Tùy chọn) Cho nút Tắt/Bật node điều khiển container Docker
+
+M��c định, nút "Tắt node"/"Bật node" trên Web UI **không** điều khiển container (xem 8.3). Nếu muốn bật tính năng này để demo cho tiện, dùng file override `docker-compose.control.yml`:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.control.yml up --build -d
+```
+
+Override này đặt biến `DOCKER_CONTROL=1` và gắn `/var/run/docker.sock` vào container manager; manager sẽ gọi Docker Engine API để start/stop container `udpt-<node_id>`.
+
+> ⚠️ **Cảnh báo bảo mật:** gắn `docker.sock` cho phép manager điều khiển toàn bộ Docker trên máy host (tương đương quyền root host). **Chỉ dùng cho môi trường dev/demo cục bộ, không dùng cho production.** Không bật cờ này khi triển khai thật.
+
+Biến môi trường liên quan: `DOCKER_CONTROL` (1/0), `DOCKER_SOCKET` (mặc định `/var/run/docker.sock`), `DOCKER_NODE_PREFIX` (mặc định `udpt-`, phải khớp `container_name` trong compose).
