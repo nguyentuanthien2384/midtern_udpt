@@ -1,29 +1,13 @@
 {
   "replication_factor": 2,
-  "heartbeat_interval": 2,
-  "failure_timeout": 5,
+  "heartbeat_interval": 3,
+  "failure_timeout": 10,
   "rpc_timeout": 1.5,
   "virtual_nodes_per_node": 256,
   "nodes": [
-    {
-      "id": "node1",
-      "host": "127.0.0.1",
-      "port": 8000
-    },
-    {
-      "id": "node2",
-      "host": "127.0.0.1",
-      "port": 8001
-    },
-    {
-      "id": "node3",
-      "host": "127.0.0.1",
-      "port": 8002
-    },
-    {
-      "id": "node4",
-      "host": "127.0.0.1",
-      "port": 8003
-    }
+    { "id": "node1", "host": "127.0.0.1", "port": 8000 },
+    { "id": "node2", "host": "127.0.0.1", "port": 8001 },
+    { "id": "node3", "host": "127.0.0.1", "port": 8002 },
+    { "id": "node4", "host": "127.0.0.1", "port": 8003 }
   ]
 }
