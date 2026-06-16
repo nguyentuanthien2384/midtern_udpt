@@ -14,3 +14,4 @@ env/
 *.zip
 .DS_Store
 Thumbs.db
+node_data/

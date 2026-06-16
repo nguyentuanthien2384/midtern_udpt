@@ -6,3 +6,6 @@ __pycache__/
 .venv/
 venv/
 env/
+
+# Du lieu luu tru cua node (persistence)
+node_data/

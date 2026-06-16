@@ -6,7 +6,9 @@ services:
     command: ["python", "-u", "node.py", "--node", "node1", "--config", "cluster_config.docker.json", "--bind-host", "0.0.0.0"]
     ports:
       - "8001:8000"
-    restart: unless-stopped
+    volumes:
+      - node1-data:/app/node_data
+    restart: "no"
     healthcheck:
       test: ["CMD", "python", "healthcheck_node.py", "--host", "127.0.0.1", "--port", "8000"]
       interval: 10s
@@ -21,9 +23,11 @@ services:
     command: ["python", "-u", "node.py", "--node", "node2", "--config", "cluster_config.docker.json", "--bind-host", "0.0.0.0"]
     ports:
       - "8002:8000"
+    volumes:
+      - node2-data:/app/node_data
     depends_on:
       - node1
-    restart: unless-stopped
+    restart: "no"
     healthcheck:
       test: ["CMD", "python", "healthcheck_node.py", "--host", "127.0.0.1", "--port", "8000"]
       interval: 10s
@@ -38,10 +42,12 @@ services:
     command: ["python", "-u", "node.py", "--node", "node3", "--config", "cluster_config.docker.json", "--bind-host", "0.0.0.0"]
     ports:
       - "8003:8000"
+    volumes:
+      - node3-data:/app/node_data
     depends_on:
       - node1
       - node2
-    restart: unless-stopped
+    restart: "no"
     healthcheck:
       test: ["CMD", "python", "healthcheck_node.py", "--host", "127.0.0.1", "--port", "8000"]
       interval: 10s
@@ -56,6 +62,9 @@ services:
     command: ["python", "-u", "manager_app.py", "--config", "cluster_config.docker.json", "--host", "0.0.0.0", "--port", "5000"]
     ports:
       - "5000:5000"
+    volumes:
+      # Cho phép manager bật/tắt các container node từ Web UI.
+      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - node1
       - node2
@@ -67,3 +76,8 @@ services:
       timeout: 3s
       retries: 5
       start_period: 8s
+
+volumes:
+  node1-data:
+  node2-data:
+  node3-data:
