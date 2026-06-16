@@ -2,23 +2,143 @@
 <div class="page" id="page-servers">
   <div class="page-header">
     <div>
-      <div class="page-title"><i class="fas fa-server"></i> Giám Sát Cụm Server</div>
-      <div class="page-subtitle">Trạng thái real-time của tất cả node trong cluster</div>
+      <div class="page-title">
+        <i class="fas fa-server"></i> Giám Sát Cụm Server
+      </div>
+      <div class="page-subtitle">
+        Trạng thái real-time của tất cả node trong cluster
+      </div>
     </div>
     <div class="toolbar-actions">
-      <span style="font-size:12px;color:var(--color-muted);margin-right:8px">
+      <span
+        style="font-size: 12px; color: var(--color-muted); margin-right: 8px"
+      >
         Cập nhật: <span id="lastUpdate">--</span>
       </span>
-      <button id="btnRefreshStatus" class="btn btn-outline" onclick="loadClusterStatus()">
+      <button
+        id="btnFailoverDemo"
+        class="btn btn-outline"
+        onclick="runFailoverDemo()"
+      >
+        <i class="fas fa-vial"></i> Demo Failover
+      </button>
+      <button
+        id="btnRefreshStatus"
+        class="btn btn-outline"
+        onclick="loadClusterStatus()"
+      >
         <i class="fas fa-sync"></i> Làm mới
       </button>
     </div>
   </div>
 
   <div class="nodes-grid" id="nodesGrid">
-    <div class="loading-state" style="grid-column:1/-1">
-      <i class="fas fa-spinner fa-spin" style="font-size:32px"></i>
+    <div class="loading-state" style="grid-column: 1/-1">
+      <i class="fas fa-spinner fa-spin" style="font-size: 32px"></i>
       <p>Đang tải trạng thái cluster...</p>
+    </div>
+  </div>
+
+  <!-- Quản lý membership: thêm / xóa node lúc đang chạy -->
+  <div class="ring-section" id="membershipSection">
+    <div class="ring-head">
+      <div>
+        <div class="ring-title">
+          <i class="fas fa-network-wired"></i> Quản Lý Cluster (động)
+        </div>
+        <div class="ring-subtitle">
+          Thêm hoặc xóa node khi hệ thống đang chạy. Ring được dựng lại và dữ
+          liệu tự di trú sang đúng chủ mới (chỉ ~k/n key phải di chuyển).
+          <b>Local:</b> nhập port node lắng nghe. <b>Docker:</b> manager tự tạo
+          container mới; port là cổng publish ra host (tùy chọn).
+        </div>
+      </div>
+    </div>
+    <div class="membership-controls">
+      <div class="membership-group">
+        <span class="membership-label"
+          ><i class="fas fa-plus-circle"></i> Thêm node</span
+        >
+        <input
+          id="addNodeId"
+          class="membership-input"
+          placeholder="id (vd: node4)"
+        />
+        <input
+          id="addNodeHost"
+          class="membership-input"
+          placeholder="host"
+          value="127.0.0.1"
+        />
+        <input
+          id="addNodePort"
+          class="membership-input membership-input-sm"
+          placeholder="port (tùy chọn ở Docker)"
+          type="number"
+        />
+        <button id="btnAddNode" class="btn btn-primary" onclick="addNode()">
+          <i class="fas fa-plus"></i> Thêm
+        </button>
+      </div>
+      <div class="membership-group">
+        <span class="membership-label"
+          ><i class="fas fa-minus-circle"></i> Xóa node</span
+        >
+        <select id="removeNodeSelect" class="membership-input"></select>
+        <button
+          id="btnRemoveNode"
+          class="btn btn-danger"
+          onclick="removeNode()"
+        >
+          <i class="fas fa-trash"></i> Xóa
+        </button>
+      </div>
+      <div class="membership-group" id="restoreGroup" style="display: none">
+        <span class="membership-label"
+          ><i class="fas fa-rotate-left"></i> Khôi phục node</span
+        >
+        <select id="restoreNodeSelect" class="membership-input"></select>
+        <button
+          id="btnRestoreNode"
+          class="btn btn-success"
+          onclick="restoreNode()"
+        >
+          <i class="fas fa-rotate-left"></i> Khôi phục
+        </button>
+      </div>
+      <div id="membershipMsg" class="membership-msg"></div>
+    </div>
+  </div>
+
+  <!-- Consistent Hashing: Hash Ring + Virtual Nodes -->
+  <div class="ring-section" id="ringSection">
+    <div class="ring-head">
+      <div>
+        <div class="ring-title">
+          <i class="fas fa-circle-nodes"></i> Hash Ring &amp; Virtual Nodes
+        </div>
+        <div class="ring-subtitle">
+          Mỗi node vật lý được rải thành nhiều <b>virtual node</b> trên vòng băm
+          để phân bố dữ liệu cân bằng hơn (consistent hashing).
+        </div>
+      </div>
+      <div class="ring-meta" id="ringMeta">--</div>
+    </div>
+    <div class="ring-body">
+      <div class="ring-canvas-wrap">
+        <svg
+          id="ringCanvas"
+          viewBox="0 0 320 320"
+          class="ring-canvas"
+          aria-label="Hash ring"
+        ></svg>
+      </div>
+      <div class="ring-legend" id="ringLegend">
+        <div class="empty-state">
+          <i class="fas fa-spinner fa-spin"></i>
+          <p>Đang tải hash ring...</p>
+        </div>
+      </div>
     </div>
   </div>
 </div>
