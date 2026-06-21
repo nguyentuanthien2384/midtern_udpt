@@ -15,7 +15,7 @@ Project mô phỏng hệ thống lưu trữ dữ liệu dạng **Key – Value**
 - **Management Web UI**: xem dashboard, danh sách key, trạng thái server, thêm/tìm/xóa dữ liệu.
 - **Docker Compose**: chạy nhanh 3 node + Web UI bằng container.
 - **Multi-VM Docker**: triển khai mỗi node trên một máy ảo riêng, chuẩn hóa môi trường bằng Docker.
-
+Link demo: https://youtu.be/1gJ9rt72rCQ
 ## Cấu trúc project
 
 ```text
